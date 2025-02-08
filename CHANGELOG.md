@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Context struct asset
  - Makefile
  - gitignore
+ - debug_config
 
 ### Changed
 ### Fixed
