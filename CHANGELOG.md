@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - samples for testing
  - Context struct asset
  - Makefile
+ - gitignore
 
 ### Changed
 ### Fixed
