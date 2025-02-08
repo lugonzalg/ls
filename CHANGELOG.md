@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
     - CHANGELOG.md [develop]
     - samples for testing [develop]
+    - Context struct asset [develop]
 
 ### Changed
 ### Fixed
