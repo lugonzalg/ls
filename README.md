@@ -65,4 +65,5 @@ dir_1  dir_3  dir_2
 ### STAGE 1 - 2025/02/08
 
 Parse, sanitize and store all user input into a context struct.
+
 ![screenshot](assets/Context.svg)
