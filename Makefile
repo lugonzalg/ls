@@ -2,8 +2,8 @@ NAME 	= ft_ls
 
 CC 		= clang
 CFLAGS 	= -Wall -Werror -Wextra -g3 -fsanitize=address
-INC 	= -I inc/
-LIB		= -L -lft
+INC 	= -I inc -I libft/include
+LIB		= -L libft -lft
 RM		= rm -rf
 
 FILES	= src/main
