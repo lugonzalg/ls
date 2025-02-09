@@ -2,16 +2,12 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "context.h"
 #include "libft.h"
 
 # define SPACE_SEPARATOR ' '
-
-int simple_context(t_context *ctx) {
-    (void)ctx;
-    return 0;
-}
 
 void free_token(void *token) {
     free(token);
@@ -44,8 +40,38 @@ t_list  *create_token_list(int argc, char *argv[]){
 }
 
 int fill_context(t_context *ctx, t_list *head) {
-    (void)head;
-    (void)ctx;
+    t_list      *tmp;
+    char        *token;
+    struct stat *file_stats;
+
+    while (head) {
+
+        token = head->content;
+
+        // Is a flag case
+        if (*token == '-') {
+            for (size_t idx = 1; idx < ft_strlen(token); idx++) {
+                if (ft_strncmp(FLAGS, &token[idx], 1))
+                    return 1;
+                ctx->flags[(int)token[idx]] = true;
+            }
+        }
+        // Is a file/directory case
+        else {
+            file_stats = ft_calloc(1, sizeof(struct stat));
+            if (file_stats == NULL)
+                return 1;
+
+            if (stat(token, file_stats)) {
+                free(file_stats);
+                return 1;
+            }
+            tmp = ft_lstnew(file_stats);
+        }
+        tmp = head;
+        head = head->next;
+        ft_lstdelone(tmp, free_token);
+    }
     return 0;
 }
 
@@ -70,9 +96,7 @@ int main(int argc, char *argv[]) {
 
     retval = 1;
     ft_bzero(&ctx, sizeof(t_context));
-    if (argc == 1)
-        retval = simple_context(&ctx);
-    else
+    if (argc != 1)
         retval = process_user_input(argc, argv, &ctx);
 
     if (retval)
