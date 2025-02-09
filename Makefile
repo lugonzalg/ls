@@ -26,8 +26,7 @@ clean:
 fclean: clean
 	@echo "\033[1;31m\t\tRemoving $(NAME)\033[0;m"
 	$(RM) $(NAME)
-	$(RM) philo.dSYM
 
 re: fclean all
 
-.PHONY: all bonus clean fclean re
+.PHONY: all clean fclean re
