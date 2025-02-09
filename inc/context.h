@@ -13,8 +13,8 @@
 # define SORT_BY_TIME 't'
 
 typedef struct s_context {
-    bool            flags[255];
-    struct s_list   *head;
+    bool    flags[255];
+    t_list  *head;
 } t_context;
 
 #endif //CONTEXT_H
