@@ -7,16 +7,22 @@
 #include "system_file.h"
 #include "context.h"
 #include "libft.h"
+#include "ft_printf.h"
 
 # define SPACE_SEPARATOR ' '
 
 void free_system_file(void *system_file) {
-    free(((t_system_file *)system_file)->name);
-    free(((t_system_file *)system_file));
+    t_system_file *ref;
+
+    ref = system_file;
+    free(ref->name);
+    ref->name = NULL;
+    free(ref);
 }
 
 void free_token(void *token) {
     free(token);
+    token = NULL;
 }
 
 void free_dummy(void *token) {
@@ -59,50 +65,48 @@ int fill_context(t_context *ctx, t_list *head) {
         token = head->content;
 
         // Is a flag case
-        if (*token == '-') {
-            for (size_t idx = 1; idx < ft_strlen(token); idx++) {
-                if (ft_strncmp(FLAGS, &token[idx], 1))
-                    return 1;
-                ctx->flags[(int)token[idx]] = true;
-                free(token);
+        if (*token == '-' && *(token + 1)) {
+            while (*(++token)) {
+                if (ft_strncmp(FLAGS, token, 1)){
+                    ft_printf("ls: invalid option -- '%c'\n", *token);
+                    ft_printf("Try 'ls --help' for more information.\n");
+                    return 2;
+                }
+                ctx->flags[(int)*token] = true;
             }
         }
         // Is a file/directory case
         else {
             system_file = ft_calloc(1, sizeof(t_system_file));
             if (system_file == NULL)
-                return 1;
+                return 2;
 
-            if (stat(token, &system_file->stats)) {
-                free(system_file);
-                return 1;
-            }
-
-            system_file->name = token;
+            stat(token, &system_file->stats);
+            system_file->name = ft_strdup(token);
             tmp = ft_lstnew(system_file);
             ft_lstadd_back(&ctx->head, tmp);
         }
-        tmp = head;
         head = head->next;
-        ft_lstdelone(tmp, free_dummy);
     }
     return 0;
 }
 
 int process_user_input(int argc, char *argv[], t_context *ctx) {
     t_list  *head;
+    int     retval;
 
+    retval = 0;
     head = create_token_list(argc, argv);
     if (head == NULL)
         return 1;
 
-    if (fill_context(ctx, head)) {
-        ft_lstdelone(head, free_token);
-        return 1;
-    }
+    retval = fill_context(ctx, head);
+    if (retval)
+        return retval;
+    ft_lstclear(&head, free_token);
 
     ft_lstclear(&ctx->head, free_system_file);
-    return 0;
+    return retval;
 }
 
 int main(int argc, char *argv[]) {
