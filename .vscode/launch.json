@@ -9,7 +9,6 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/lukas/ls/ft_ls",
-            "args": ["-a", "\"inc libft\""],
             "stopAtEntry": false,
             "cwd": "/home/lukas/ls",
             "environment": [],

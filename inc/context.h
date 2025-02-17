@@ -15,6 +15,7 @@
 typedef struct s_context {
     bool    flags[255];
     t_list  *head;
+    size_t  total_file_len;  
 } t_context;
 
 #endif //CONTEXT_H

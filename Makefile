@@ -6,7 +6,8 @@ INC 	= -I inc -I libft/include
 LIB		= -L libft -lft
 RM		= rm -rf
 
-FILES	= src/main
+FILES	= \
+	src/main
 
 SRC 	= $(addsuffix .c, $(FILES))
 OBJ 	= $(addsuffix .o, $(FILES))
@@ -15,6 +16,7 @@ OBJ 	= $(addsuffix .o, $(FILES))
 	$(CC) $(CFLAGS) $(INC) -c $^ -o $@
 
 $(NAME): $(OBJ)
+	make -C libft
 	@echo "\033[1;33m\t\tCompiling all source files into unique binary\033[0;m"
 	$(CC) $(CFLAGS) -o $(NAME) $(OBJ) $(LIB)
 
