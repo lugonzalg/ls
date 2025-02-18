@@ -196,6 +196,23 @@ bool alphanumeric_compare(void *v1, int low, int high) {
 
 }
 
+bool timestamp_compare(void *v1, int low, int high) {
+    t_system_file **sysfile = v1;
+    long long ref1 = sysfile[low]->stats.st_mtim.tv_sec * 1000000000LL + sysfile[low]->stats.st_mtim.tv_nsec;
+    long long ref2 = sysfile[high]->stats.st_mtim.tv_sec * 1000000000LL + sysfile[high]->stats.st_mtim.tv_nsec;
+    if (ref1 == ref2)
+        return alphanumeric_compare(v1, low, high);
+    return ref1 > ref2;
+}
+
+bool reverse_timestamp_compare(void *v1, int low, int high) {
+    return !timestamp_compare(v1, low, high);
+}
+
+bool reverse_alphanumeric_compare(void *v1, int low, int high) {
+    return !alphanumeric_compare(v1, low, high);
+}
+
 static void print_file_info(
     t_system_file **file_array,
     t_context *ctx,
@@ -238,14 +255,21 @@ static void print_file_info(
 
 static int recursive(t_system_file **file_array, size_t n_of_files, t_context *ctx, const char *ctx_dirname) {
 
-    char *base;
-    char *next_dir;
+    char    *base;
+    char    *next_dir;
+    size_t  j;
 
+    j = 0;
     base = ft_strjoin(ctx_dirname, "/");
     if (base == NULL)
         return 2;
 
-    for (size_t j = 2; j < n_of_files; j++) {
+    if (ctx->flags[REVERSE])
+        n_of_files -= 2;
+    else
+        j = 2;
+
+    while (j < n_of_files) {
         if (file_array[j]->stats.st_mode == 16893) {
             next_dir = ft_strjoin(base, file_array[j]->name);
             if (next_dir == NULL)
@@ -253,6 +277,7 @@ static int recursive(t_system_file **file_array, size_t n_of_files, t_context *c
             process_file_info(next_dir, ctx);
             free(next_dir);
         }
+        j++;
     }
     free(base);
     return 0;
@@ -301,12 +326,13 @@ int process_file_info(const char *basedir, t_context *ctx) {
     }
     ctx->total_file_len += (idx - 1) * 2;
     closedir(curr_dir);
-    ft_merge_sort(file_array, 0, idx - 1, sizeof(t_system_file *), alphanumeric_compare);
+    ft_merge_sort(file_array, 0, idx - 1, sizeof(t_system_file *), ctx->comparison_method);
     print_file_info(file_array, ctx, idx, basedir);
 
     if (ctx->flags[RECURSIVE]) {
         recursive(file_array, idx, ctx, basedir);
     }
+
     for (size_t i = 0; i < idx; i++) {
         free(file_array[i]->name);
         free(file_array[i]);
@@ -318,6 +344,15 @@ int process_file_info(const char *basedir, t_context *ctx) {
 static int run_program(t_context *ctx) {
     t_list          *tmp;
     t_system_file   *sysfile;
+
+    if (ctx->flags[SORT_BY_TIME]) {
+        if (ctx->flags[REVERSE])
+            ctx->comparison_method = reverse_timestamp_compare;
+        else
+            ctx->comparison_method = timestamp_compare;
+    }
+    if (ctx->flags[REVERSE])
+        ctx->comparison_method = reverse_alphanumeric_compare;
 
     tmp = ctx->head;
     while (tmp) {
@@ -335,6 +370,8 @@ int main(int argc, char *argv[]) {
 
     retval = 0;
     ft_bzero(&ctx, sizeof(t_context));
+    ctx.comparison_method = alphanumeric_compare;
+
     if (argc != 1)
         retval = process_user_input(argc, argv, &ctx);
         

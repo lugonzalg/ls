@@ -13,9 +13,10 @@
 # define SORT_BY_TIME 't'
 
 typedef struct s_context {
-    bool    flags[255];
-    t_list  *head;
-    size_t  total_file_len;  
+    bool        flags[255];
+    t_list      *head;
+    size_t      total_file_len;  
+    c_compare   comparison_method;
 } t_context;
 
 int process_file_info(const char *ctx_dirname, t_context *ctx);
