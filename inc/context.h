@@ -18,4 +18,6 @@ typedef struct s_context {
     size_t  total_file_len;  
 } t_context;
 
+int process_file_info(const char *ctx_dirname, t_context *ctx);
+
 #endif //CONTEXT_H

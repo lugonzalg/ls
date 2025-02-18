@@ -18,8 +18,7 @@ void free_system_file(void *system_file) {
     t_system_file *ref;
 
     ref = system_file;
-    free(ref->real_name);
-    free(ref->sort_name);
+    free(ref->name);
     free(ref);
 }
 
@@ -59,14 +58,13 @@ t_list  *create_token_list(int argc, char *argv[]){
 }
 
 static int assign_flag(t_context *ctx, const char *token) {
-
     if (*(token + 1) == '-') {
         ft_printf("ls: invalid option - '%c'\n", *(token + 1));
         return 2;
     }
 
     while (*(++token)) {
-        if (ft_strncmp(FLAGS, token, 1)){
+        if (!ft_strchr(FLAGS, *token)){
             ft_printf("ls: invalid option -- '%c'\n", *token);
             ft_printf("Try 'ls --help' for more information.\n");
             return 2;
@@ -76,26 +74,37 @@ static int assign_flag(t_context *ctx, const char *token) {
     return 0;
 }
 
-t_system_file *sysfile_new(const char *name) {
-    t_system_file *sysfile;
-    size_t        n;
+t_system_file *sysfile_new(const char *basedir, const char *name) {
+    t_system_file   *sysfile;
+    char            *base_path;
+    char            *relative_path;
 
     sysfile = ft_calloc(1, sizeof(t_system_file));
     if (sysfile == NULL)
         return NULL;
 
-    stat(name, &sysfile->stats);
-    sysfile->real_name = ft_strdup(name);
-    if (*sysfile->real_name == '.')
-        sysfile->sort_name = ft_strdup(name + 1);
-    else
-        sysfile->sort_name = ft_strdup(name);
-
-    n = ft_strlen(sysfile->sort_name);
-    for (size_t idx = 0; idx < n; idx++) {
-        sysfile->sort_name[idx] = ft_tolower(sysfile->sort_name[idx]);
+    base_path = ft_strjoin(basedir, "/");
+    if (base_path == NULL) {
+        free(sysfile);
+        return NULL;
     }
-    
+
+    relative_path = ft_strjoin(base_path, name);
+    if (relative_path == NULL) {
+        free(sysfile);
+        free(base_path);
+        return NULL;
+    }
+
+    free(base_path);
+    stat(relative_path, &sysfile->stats);
+    free(relative_path);
+
+    sysfile->name = ft_strdup(name);
+    if (sysfile->name == NULL) {
+        free(sysfile);
+        return NULL;
+    }
     return sysfile;
 }
 
@@ -103,7 +112,7 @@ int assign_file(t_context *ctx, const char *token) {
     t_list        *tmp;
     t_system_file *sysfile;
 
-    sysfile = sysfile_new(token);
+    sysfile = sysfile_new(".", token);
     if (sysfile == NULL)
         return 2;
 
@@ -173,13 +182,13 @@ bool alphanumeric_compare(void *v1, int low, int high) {
     int             max_len;
 
     sysfile = v1;
-    len1 = ft_strlen(sysfile[low]->sort_name);
-    len2 = ft_strlen(sysfile[high]->sort_name);
+    len1 = ft_strlen(sysfile[low]->name);
+    len2 = ft_strlen(sysfile[high]->name);
     max_len = len1;
     if (max_len < len2)
         max_len = len2;
 
-    diff = ft_strncmp(sysfile[low]->sort_name, sysfile[high]->sort_name, max_len);
+    diff = ft_strncmp(sysfile[low]->name, sysfile[high]->name, max_len);
 
     if (diff <= 0)
         return true;
@@ -189,39 +198,67 @@ bool alphanumeric_compare(void *v1, int low, int high) {
 
 static void print_file_info(
     t_system_file **file_array,
+    t_context *ctx,
     size_t n_of_files,
-    size_t total_file_len
+    const char *basedir
 ) {
-    size_t  ratio;
-    size_t  printed_len;
+    //size_t  ratio;
+    //size_t  printed_len;
     size_t  idx;
-    size_t  max_grid;
+    //size_t  max_grid;
 
     idx = 0;
-    if (total_file_len <= GRID_LEN) {
-        while (idx < n_of_files)
-            ft_printf("%s  ", file_array[idx++]->real_name);
-    } else {
-        ratio = total_file_len / GRID_LEN;
-        if (total_file_len % GRID_LEN)
-            ratio++;
+    if (ctx->flags[RECURSIVE])
+        ft_printf("%s:\n", basedir);
 
-        max_grid = GRID_LEN / ratio;
-        for (size_t col = 0; col < ratio; col++) {
-            printed_len = 0;
-            idx = col;
-            while (printed_len < max_grid) {
-                printed_len += ft_printf("%s  ", file_array[idx]->real_name);
-                idx += ratio;
-            }
-            ft_printf("\n");
+    //if (ctx->total_file_len <= GRID_LEN) {
+    while (idx < n_of_files)
+        ft_printf("%s  ", file_array[idx++]->name);
+    ft_printf("\n");
+    //}
+    //else {
+    //    ratio = ctx->total_file_len / GRID_LEN;
+    //    if (ctx->total_file_len % GRID_LEN)
+    //        ratio++;
 
-        }
-    }
+    //    max_grid = GRID_LEN / ratio;
+    //    for (size_t col = 0; col < ratio; col++) {
+    //        printed_len = 0;
+    //        idx = col;
+    //        while (printed_len < max_grid) {
+    //            printed_len += ft_printf("%s  ", file_array[idx]->name);
+    //            idx += ratio;
+    //        }
+    //        ft_printf("\n");
+
+    //    }
+    //}
 
 }
 
-static int process_file_info(const char *ctx_dirname, t_context *ctx) {
+static int recursive(t_system_file **file_array, size_t n_of_files, t_context *ctx, const char *ctx_dirname) {
+
+    char *base;
+    char *next_dir;
+
+    base = ft_strjoin(ctx_dirname, "/");
+    if (base == NULL)
+        return 2;
+
+    for (size_t j = 2; j < n_of_files; j++) {
+        if (file_array[j]->stats.st_mode == 16893) {
+            next_dir = ft_strjoin(base, file_array[j]->name);
+            if (next_dir == NULL)
+                return 2;
+            process_file_info(next_dir, ctx);
+            free(next_dir);
+        }
+    }
+    free(base);
+    return 0;
+}
+
+int process_file_info(const char *basedir, t_context *ctx) {
     t_system_file **file_array;
     DIR           *curr_dir;
     struct dirent *curr_file;
@@ -230,7 +267,7 @@ static int process_file_info(const char *ctx_dirname, t_context *ctx) {
 
     n_of_dirs = N_OF_DIRS;
     idx = 0;
-    curr_dir = opendir(ctx_dirname);
+    curr_dir = opendir(basedir);
     if (curr_dir == NULL) {
         return 2;
     }
@@ -238,7 +275,13 @@ static int process_file_info(const char *ctx_dirname, t_context *ctx) {
     file_array = (t_system_file **)malloc(n_of_dirs * sizeof(t_system_file *));
     curr_file = readdir(curr_dir); 
     while (curr_file) {
-        file_array[idx] = sysfile_new(curr_file->d_name);
+
+        if (!ctx->flags[ALL] && *curr_file->d_name == '.') {
+            curr_file = readdir(curr_dir);
+            continue ;
+        }
+
+        file_array[idx] = sysfile_new(basedir, curr_file->d_name);
         if (file_array[idx] == NULL)
             return 2;
 
@@ -259,7 +302,16 @@ static int process_file_info(const char *ctx_dirname, t_context *ctx) {
     ctx->total_file_len += (idx - 1) * 2;
     closedir(curr_dir);
     ft_merge_sort(file_array, 0, idx - 1, sizeof(t_system_file *), alphanumeric_compare);
-    print_file_info(file_array, idx, ctx->total_file_len);
+    print_file_info(file_array, ctx, idx, basedir);
+
+    if (ctx->flags[RECURSIVE]) {
+        recursive(file_array, idx, ctx, basedir);
+    }
+    for (size_t i = 0; i < idx; i++) {
+        free(file_array[i]->name);
+        free(file_array[i]);
+    }
+    free(file_array);
     return 0;
 }
 
@@ -270,7 +322,7 @@ static int run_program(t_context *ctx) {
     tmp = ctx->head;
     while (tmp) {
         sysfile = tmp->content;
-        process_file_info(sysfile->real_name, ctx);
+        process_file_info(sysfile->name, ctx);
         tmp = tmp->next;
     }
     return 0;
@@ -285,7 +337,8 @@ int main(int argc, char *argv[]) {
     ft_bzero(&ctx, sizeof(t_context));
     if (argc != 1)
         retval = process_user_input(argc, argv, &ctx);
-    else
+        
+    if (ctx.head == NULL)
         assign_file(&ctx, ".");
 
     run_program(&ctx);

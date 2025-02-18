@@ -5,8 +5,7 @@
 #include <stdbool.h>
 
 typedef struct s_system_file {
-    char        *real_name;
-    char        *sort_name;
+    char        *name;
     struct stat stats;
 } t_system_file;
 
