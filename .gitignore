@@ -1,3 +1,4 @@
 *.o
 ft_ls
 samples
+testdir

@@ -7,7 +7,10 @@ LIB		= -L libft -lft
 RM		= rm -rf
 
 FILES	= \
-	src/main
+	src/main \
+	src/user_input \
+	src/system_file \
+	src/sort_aux
 
 SRC 	= $(addsuffix .c, $(FILES))
 OBJ 	= $(addsuffix .o, $(FILES))
