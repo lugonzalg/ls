@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/lukas/ls/ft_ls",
-            "args": ["-R"],
+            "args": ["-taRr"],
             "stopAtEntry": false,
             "cwd": "/home/lukas/ls",
             "environment": [],

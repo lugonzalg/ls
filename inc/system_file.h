@@ -7,6 +7,7 @@
 typedef struct s_system_file {
     char        *name;
     struct stat stats;
+    long long   time_ref;
 } t_system_file;
 
 #endif //SYSTEM_FILE_H
