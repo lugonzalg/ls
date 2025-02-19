@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - debug_config
  - context
  - system_file
+ - -tarR
 
 ### Changed
 ### Fixed

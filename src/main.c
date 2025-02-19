@@ -100,6 +100,7 @@ t_system_file *sysfile_new(const char *basedir, const char *name) {
     stat(relative_path, &sysfile->stats);
     free(relative_path);
 
+    sysfile->time_ref = sysfile->stats.st_mtim.tv_sec * 1000000000LL + sysfile->stats.st_mtim.tv_nsec;
     sysfile->name = ft_strdup(name);
     if (sysfile->name == NULL) {
         free(sysfile);
@@ -198,11 +199,14 @@ bool alphanumeric_compare(void *v1, int low, int high) {
 
 bool timestamp_compare(void *v1, int low, int high) {
     t_system_file **sysfile = v1;
-    long long ref1 = sysfile[low]->stats.st_mtim.tv_sec * 1000000000LL + sysfile[low]->stats.st_mtim.tv_nsec;
-    long long ref2 = sysfile[high]->stats.st_mtim.tv_sec * 1000000000LL + sysfile[high]->stats.st_mtim.tv_nsec;
-    if (ref1 == ref2)
-        return alphanumeric_compare(v1, low, high);
-    return ref1 > ref2;
+
+    if (sysfile[low]->time_ref < sysfile[high]->time_ref)
+        return false;
+    
+    if (sysfile[low]->time_ref > sysfile[high]->time_ref)
+        return true;
+
+    return alphanumeric_compare(v1, low, high);
 }
 
 bool reverse_timestamp_compare(void *v1, int low, int high) {
@@ -219,10 +223,7 @@ static void print_file_info(
     size_t n_of_files,
     const char *basedir
 ) {
-    //size_t  ratio;
-    //size_t  printed_len;
     size_t  idx;
-    //size_t  max_grid;
 
     idx = 0;
     if (ctx->flags[RECURSIVE])
@@ -232,52 +233,29 @@ static void print_file_info(
     while (idx < n_of_files)
         ft_printf("%s  ", file_array[idx++]->name);
     ft_printf("\n");
-    //}
-    //else {
-    //    ratio = ctx->total_file_len / GRID_LEN;
-    //    if (ctx->total_file_len % GRID_LEN)
-    //        ratio++;
+}
 
-    //    max_grid = GRID_LEN / ratio;
-    //    for (size_t col = 0; col < ratio; col++) {
-    //        printed_len = 0;
-    //        idx = col;
-    //        while (printed_len < max_grid) {
-    //            printed_len += ft_printf("%s  ", file_array[idx]->name);
-    //            idx += ratio;
-    //        }
-    //        ft_printf("\n");
-
-    //    }
-    //}
-
+static bool is_not_dot(const char *filename) {
+    return ft_strncmp(".", filename, 2) && ft_strncmp("..", filename, 3);
 }
 
 static int recursive(t_system_file **file_array, size_t n_of_files, t_context *ctx, const char *ctx_dirname) {
 
     char    *base;
     char    *next_dir;
-    size_t  j;
 
-    j = 0;
     base = ft_strjoin(ctx_dirname, "/");
     if (base == NULL)
         return 2;
 
-    if (ctx->flags[REVERSE])
-        n_of_files -= 2;
-    else
-        j = 2;
-
-    while (j < n_of_files) {
-        if (file_array[j]->stats.st_mode == 16893) {
+    for (size_t j = 0; j < n_of_files; j++) {
+        if (file_array[j]->stats.st_mode == 16893 && is_not_dot(file_array[j]->name)) {
             next_dir = ft_strjoin(base, file_array[j]->name);
             if (next_dir == NULL)
                 return 2;
             process_file_info(next_dir, ctx);
             free(next_dir);
         }
-        j++;
     }
     free(base);
     return 0;
@@ -351,7 +329,7 @@ static int run_program(t_context *ctx) {
         else
             ctx->comparison_method = timestamp_compare;
     }
-    if (ctx->flags[REVERSE])
+    else if (ctx->flags[REVERSE])
         ctx->comparison_method = reverse_alphanumeric_compare;
 
     tmp = ctx->head;
